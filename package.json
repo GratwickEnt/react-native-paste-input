@@ -1,6 +1,6 @@
 {
   "name": "@mattermost/react-native-paste-input",
-  "version": "2.0.1-gratwick.1",
+  "version": "2.0.1-gratwick.2",
   "description": "React Native TextInput replacement to allow pasting files (Fabric only)",
   "main": "lib/commonjs/index.js",
   "module": "lib/module/index.js",
@@ -56,7 +56,6 @@
     "@react-native/metro-config": "0.83.6",
     "@react-native/typescript-config": "0.83.6",
     "@release-it/conventional-changelog": "11.0.0",
-    "@types/invariant": "^2.2.37",
     "@types/react": "19.2.14",
     "@typescript-eslint/eslint-plugin": "8.59.0",
     "@typescript-eslint/parser": "8.59.0",

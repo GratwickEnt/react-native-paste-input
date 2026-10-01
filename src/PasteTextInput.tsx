@@ -1,5 +1,4 @@
 import * as React from 'react';
-import invariant from 'invariant';
 import PasteTextInputNativeComponent, {
     Commands,
 } from './PasteTextInputNativeComponent';
@@ -401,10 +400,9 @@ function InternalTextInput(props: PasteInputProps): React.ReactNode {
 
     let children = props.children;
     const childCount = React.Children.count(children);
-    invariant(
-        !(props.value != null && childCount),
-        'Cannot specify both value and children.'
-    );
+    if (props.value != null && childCount) {
+        throw new Error('Cannot specify both value and children.');
+    }
     if (childCount > 1) {
         children = <Text>{children}</Text>;
     }
