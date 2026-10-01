@@ -1,6 +1,6 @@
 {
   "name": "@mattermost/react-native-paste-input",
-  "version": "2.0.1-gratwick.2",
+  "version": "2.0.1-gratwick.3",
   "description": "React Native TextInput replacement to allow pasting files (Fabric only)",
   "main": "lib/commonjs/index.js",
   "module": "lib/module/index.js",
@@ -30,7 +30,7 @@
     "test": "jest",
     "typescript": "tsc --noEmit",
     "lint": "eslint \"**/*.{js,ts,tsx}\"",
-    "prepare": "bob build && husky",
+    "build:lib": "bob build",
     "release": "release-it",
     "example": "cd example && npm",
     "pods": "cd example && RCT_NEW_ARCH_ENABLED=1 pod-install --quiet",

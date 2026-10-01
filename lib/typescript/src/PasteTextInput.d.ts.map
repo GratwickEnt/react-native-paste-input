@@ -1,1 +1,1 @@
-{"version":3,"file":"PasteTextInput.d.ts","sourceRoot":"","sources":["../../../src/PasteTextInput.tsx"],"names":[],"mappings":"AAAA,OAAO,KAAK,KAAK,MAAM,OAAO,CAAC;AAI/B,OAAO,KAAK,EAER,eAAe,EACf,sBAAsB,EAGzB,MAAM,SAAS,CAAC;AA6fjB,QAAA,MAAM,kBAAkB,gGAyCtB,CAAC;AAIH,eAAe,kBAAkB,CAAC"}
+{"version":3,"file":"PasteTextInput.d.ts","sourceRoot":"","sources":["../../../src/PasteTextInput.tsx"],"names":[],"mappings":"AAAA,OAAO,KAAK,KAAK,MAAM,OAAO,CAAC;AAI/B,OAAO,KAAK,EAER,eAAe,EACf,sBAAsB,EAGzB,MAAM,SAAS,CAAC;AA4fjB,QAAA,MAAM,kBAAkB,gGAyCtB,CAAC;AAIH,eAAe,kBAAkB,CAAC"}

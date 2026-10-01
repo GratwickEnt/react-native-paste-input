@@ -24,7 +24,6 @@ import TextAncestor from 'react-native/Libraries/Text/TextAncestor';
 import TextInputState from 'react-native/Libraries/Components/TextInput/TextInputState';
 import usePressability from 'react-native/Libraries/Pressability/usePressability';
 import flattenStyle from 'react-native/Libraries/StyleSheet/flattenStyle';
-import nullthrows from 'nullthrows';
 
 const emptyFunctionThatReturnsTrue = () => true;
 
@@ -163,8 +162,8 @@ function InternalTextInput(props: PasteInputProps): React.ReactNode {
                 TextInputState.unregisterInput(inputRefValue);
             }
 
-            if (TextInputState.currentlyFocusedInput() === inputRefValue) {
-                nullthrows(inputRefValue).blur();
+            if (inputRefValue != null && TextInputState.currentlyFocusedInput() === inputRefValue) {
+                inputRefValue.blur();
             }
         };
     }, [inputRef]);
