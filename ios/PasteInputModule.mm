@@ -15,7 +15,6 @@
 #ifdef RCT_NEW_ARCH_ENABLED
 #import <PasteTextInputSpecs/PasteTextInputSpecs.h>
 #import <React/RCTSurfacePresenter.h>
-#import <React/RCTSurfacePresenterBridgeAdapter.h>
 #import <React/RCTFabricSurface.h>
 #import <React/RCTMountingManager.h>
 #import <React/RCTComponentViewRegistry.h>
@@ -168,24 +167,15 @@ RCT_EXPORT_MODULE()
 #pragma mark - View Resolution
 
 /**
- * Get surface presenter - works in both bridgeless and bridge modes
+ * Get surface presenter (bridgeless ReactHost)
  */
 - (nullable id)getSurfacePresenter
 {
 #ifdef RCT_NEW_ARCH_ENABLED
-    // Try bridgeless mode first (if reactHost is set)
+    // React Native 0.87 is bridgeless-only: RCTSurfacePresenterBridgeAdapter
+    // (the old bridge-mode path) was removed, so the ReactHost is the only source.
     if (_reactHost) {
         return [_reactHost performSelector:@selector(surfacePresenter)];
-    }
-    // Fallback to bridge mode (Fabric with bridge enabled)
-    else if (self.bridge) {
-        // self.bridge.surfacePresenter returns RCTSurfacePresenterBridgeAdapter
-        RCTSurfacePresenterBridgeAdapter *adapter = self.bridge.surfacePresenter;
-        if (adapter && [adapter respondsToSelector:@selector(surfacePresenter)]) {
-            return adapter.surfacePresenter;
-        }
-        // If that fails, the adapter itself might be the surface presenter
-        return adapter;
     }
 #endif
     return nil;
