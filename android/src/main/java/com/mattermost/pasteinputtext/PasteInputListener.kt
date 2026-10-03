@@ -19,7 +19,10 @@ class PasteInputListener(editText: PasteInputEditText, surfaceId: Int) : IPasteI
 
   override fun onPaste(itemUri: Uri, eventDispatcher: EventDispatcher?) {
     val reactContext = mEditText.context as ReactContext
-    reactContext.contentResolver.getType(itemUri) ?: return
+    // What the provider itself says the content is. A keyboard's GIF panel hands
+    // over a URI whose last segment is not a file name ('.../inputContent?...'),
+    // so the type cannot be read off the path.
+    val declaredType: String? = reactContext.contentResolver.getType(itemUri)
 
     var uriString: String = itemUri.toString()
     val mimeType: String
@@ -30,8 +33,12 @@ class PasteInputListener(editText: PasteInputEditText, surfaceId: Int) : IPasteI
     // Special handle for Google docs
     if (uriString == "content://com.google.android.apps.docs.editors.kix.editors.clipboard") {
       val clipboardManager = reactContext.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-      val clipData = clipboardManager.primaryClip ?: return
-      val item = clipData.getItemAt(0) ?: return
+      val clipData = clipboardManager.primaryClip
+      val item = clipData?.getItemAt(0)
+      if (item == null) {
+        dispatchError("The clipboard is empty", eventDispatcher)
+        return
+      }
       val htmlText = item.htmlText
 
       // Find uri from html
@@ -49,16 +56,32 @@ class PasteInputListener(editText: PasteInputEditText, surfaceId: Int) : IPasteI
       pastImageFromUrlThread.start()
       return
     } else {
-      uriString = RealPathUtil.getRealPathFromURI(reactContext, itemUri) ?: return
+      val realPath = RealPathUtil.getRealPathFromURI(reactContext, itemUri, declaredType)
+      if (realPath == null) {
+        dispatchError("Could not read the pasted content", eventDispatcher)
+        return
+      }
+      uriString = realPath
     }
 
-    val extension: String = MimeTypeMap.getFileExtensionFromUrl(uriString) ?: return
-    mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension) ?: return
+    // The provider's declared type wins; the file extension is the fallback for
+    // sources that declare none (file:// URIs).
+    val extension: String = MimeTypeMap.getFileExtensionFromUrl(uriString)
+    val resolvedType = declaredType ?: MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension)
+    if (resolvedType == null) {
+      dispatchError("Could not tell what kind of content was pasted", eventDispatcher)
+      return
+    }
+    mimeType = resolvedType
     val fileName: String = URLUtil.guessFileName(uriString, null, mimeType)
 
     try {
       val contentResolver = reactContext.contentResolver
-      val assetFileDescriptor = contentResolver.openAssetFileDescriptor(itemUri, "r") ?: return
+      val assetFileDescriptor = contentResolver.openAssetFileDescriptor(itemUri, "r")
+      if (assetFileDescriptor == null) {
+        dispatchError("Could not open the pasted content", eventDispatcher)
+        return
+      }
       val file = Arguments.createMap()
 
       files = Arguments.createArray()
@@ -79,6 +102,20 @@ class PasteInputListener(editText: PasteInputEditText, surfaceId: Int) : IPasteI
     event.putArray("data", files)
     event.putMap("error", error)
 
+    eventDispatcher?.dispatchEvent(PasteTextInputPasteEvent(mSurfaceId, mEditText.id, event))
+  }
+
+  /**
+   * Every way a paste can fail now reports it to JS. These used to be bare
+   * `return`s, so a keyboard commit that could not be read did nothing at all:
+   * no attachment and no message.
+   */
+  private fun dispatchError(message: String, eventDispatcher: EventDispatcher?) {
+    val error = Arguments.createMap()
+    error.putString("message", message)
+    val event = Arguments.createMap()
+    event.putArray("data", null)
+    event.putMap("error", error)
     eventDispatcher?.dispatchEvent(PasteTextInputPasteEvent(mSurfaceId, mEditText.id, event))
   }
 }

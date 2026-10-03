@@ -7,6 +7,7 @@ import android.provider.DocumentsContract
 import android.provider.MediaStore
 import android.provider.OpenableColumns
 import android.util.Log
+import android.webkit.MimeTypeMap
 import android.text.TextUtils
 import java.io.*
 
@@ -15,7 +16,7 @@ object RealPathUtil {
     deleteTempFiles(File(PasteTextInputManager.CACHE_DIR_NAME))
   }
 
-  fun getRealPathFromURI(context: Context, uri: Uri): String? {
+  fun getRealPathFromURI(context: Context, uri: Uri, mimeType: String? = null): String? {
     // DocumentProvider
     if (DocumentsContract.isDocumentUri(context, uri)) {
       // ExternalStorageProvider
@@ -34,7 +35,7 @@ object RealPathUtil {
             return id.replaceFirst(("raw:").toRegex(), "")
           }
           try {
-            return getPathFromSavingTempFile(context, uri)
+            return getPathFromSavingTempFile(context, uri, mimeType)
           } catch (e: NumberFormatException) {
             Log.e("ReactNative", "DownloadsProvider unexpected uri $uri")
             return null
@@ -67,14 +68,14 @@ object RealPathUtil {
         return uri.lastPathSegment
       }
       // Try save to tmp file, and return tmp file path
-      return getPathFromSavingTempFile(context, uri)
+      return getPathFromSavingTempFile(context, uri, mimeType)
     } else if ("file".equals(uri.scheme, ignoreCase = true)) {
       return uri.path
     }
     return null
   }
 
-  private fun getPathFromSavingTempFile(context: Context, uri: Uri): String? {
+  private fun getPathFromSavingTempFile(context: Context, uri: Uri, mimeType: String?): String? {
     val tmpFile: File
     var fileName: String? = null
     // Try and get the filename from the Uri
@@ -91,20 +92,24 @@ object RealPathUtil {
       if (fileName == null) {
         fileName = sanitizeFilename(uri.lastPathSegment.toString().trim())
       }
+      // A keyboard's content URI has no file extension ('.../inputContent'), and
+      // everything downstream reads the type off the name. Give the copy the
+      // extension the provider's declared type implies.
+      if (fileName != null && !fileName.contains('.') && mimeType != null) {
+        MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType)?.let { fileName = "$fileName.$it" }
+      }
       val cacheDir = File(context.cacheDir, PasteTextInputManager.CACHE_DIR_NAME)
       if (!cacheDir.exists()) {
         cacheDir.mkdirs()
       }
 
-      tmpFile = fileName?.let { File(cacheDir, it) }!!
-      tmpFile.createNewFile()
-      val pfd = context.contentResolver.openFileDescriptor(uri, "r")
-      val src = FileInputStream(pfd?.fileDescriptor).channel
-      val dst = FileOutputStream(tmpFile).channel
-      dst.transferFrom(src, 0, src.size())
-      src.close()
-      dst.close()
-      pfd?.close()
+      // Unique per paste: two different GIFs from the same keyboard share the
+      // name 'inputContent', and the second must not read the first's file.
+      tmpFile = fileName?.let { File(cacheDir, "${System.currentTimeMillis()}-$it") }!!
+      // Stream copy: a provider's stream is not seekable and reports no size, so
+      // the old channel transferFrom(src, 0, src.size()) could copy nothing.
+      val input = context.contentResolver.openInputStream(uri) ?: return null
+      input.use { source -> FileOutputStream(tmpFile).use { sink -> source.copyTo(sink) } }
     } catch (ex: IOException) {
       return null
     }
